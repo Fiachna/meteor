@@ -96,10 +96,30 @@ UI.body.attached = function () {
         // assume that all elements in this list have the same margin-top
         marginTop: marginTop
       });
-    }/*,
+    },
     removeElement: function (n) {
-      debugger;
-      n.parentNode.removeChild(n);
-    }*/
+      var $n = $(n);
+      $n.css({
+        overflow: "hidden"
+      });
+      var marginTop = $n.css('marginTop');
+      var $next = $n.next();
+      $next.animate({
+        marginTop: 0
+      });
+      $n.animate({
+        height: 0,
+        paddingTop: 0,
+        paddingBottom: 0,
+        marginTop: 0,
+        marginBottom: 0,
+        borderTopWidth: 0,
+        borderBottomWidth: 0
+      }, function () {
+        n.parentNode.removeChild(n);
+        // assume that all elements in this list have the same margin-top
+        $next.css({marginTop: marginTop});
+      });
+    }
   };
 };
