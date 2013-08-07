@@ -56,27 +56,50 @@ UI.body.attached = function () {
       Items.update(el.$ui.data()._id, {$set: {rank: newRank}});
     }
   });
-  $('.isotope').isotope({
-    itemSelector : '.item',
-    layoutMode: 'straightDown',
-    getSortData: {
-      rank: function (elem) {
-        return elem[0].$ui.data().rank;
-      }
-    },
-    sortBy: 'rank'
-  });
 
-  $('.isotope')[0].$uihooks = {
-    removeElement: function (n) {
-      $(n.parentNode).isotope('remove', $(n));
-    },
+  $('#list')[0].$uihooks = {
     insertElement: function (n, parent, next) {
-      $(parent).isotope('insert', $(n));
-    },
-    moveElement: function (n, parent, next) {
-      $(parent).isotope('updateSortData', $(n));
-      $(parent).isotope({sortBy: 'rank'});
-    }
+      var $n = $(n);
+      parent.insertBefore(n, next);
+      var height = $n.height();
+      var paddingTop = parseInt($n.css("paddingTop"), 10);
+      var paddingBottom = parseInt($n.css("paddingBottom"), 10);
+      var marginTop = parseInt($n.css("marginTop"), 10);
+      var marginBottom = parseInt($n.css("marginBottom"), 10);
+      var borderTop = parseInt($n.css("borderTop"), 10);
+      var borderBottom = parseInt($n.css("borderBottom"), 10);
+
+      $n.css({
+        height: 0,
+        paddingTop: 0,
+        paddingBottom: 0,
+        marginTop: 0,
+        marginBottom: 0,
+        borderTopWidth: 0,
+        borderBottomWidth: 0,
+        overflow: "hidden"
+      });
+      $n.next().css({
+        marginTop: 0
+      });
+
+      $n.animate({
+        height: height,
+        paddingTop: paddingTop,
+        paddingBottom: paddingBottom,
+        marginTop: marginTop,
+        marginBottom: marginBottom,
+        borderTopWidth: borderTop,
+        borderBottomWidth: borderBottom
+      });
+      $n.next().animate({
+        // assume that all elements in this list have the same margin-top
+        marginTop: marginTop
+      });
+    }/*,
+    removeElement: function (n) {
+      debugger;
+      n.parentNode.removeChild(n);
+    }*/
   };
 };
