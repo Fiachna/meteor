@@ -36,22 +36,33 @@ Ranks = {
   }
 };
 
+var randomRank = function () {
+  var first = Items.findOne({}, {sort: {rank: 1}});
+  var last = Items.findOne({}, {sort: {rank: -1}});
+  var newRank;
+  if (first && last)
+    return first.rank-1 + (Random.fraction() * (last.rank - first.rank + 2));
+  else
+    return 0;
+};
+
 Template.buttons({
   'click #add': function () {
     var words = ["violet", "unicorn", "flask", "jar", "leitmotif", "rearrange", "right", "ethereal"];
-    var first = Items.findOne({}, {sort: {rank: 1}});
-    var last = Items.findOne({}, {sort: {rank: -1}});
-    var newRank;
-    if (first && last)
-      newRank = first.rank-1 + (Random.fraction() * (last.rank - first.rank + 2));
-    else
-      newRank = 0;
-
-    Items.insert({text: Random.choice(words) + " " + Random.hexString(2), rank: newRank});
+    Items.insert({text: Random.choice(words) + " " + Random.hexString(2), rank: randomRank()});
   },
   'click #remove': function () {
     var item = Random.choice(Items.find().fetch());
     Items.remove(item._id);
+  },
+  'click #move': function () {
+    var item = Random.choice(Items.find().fetch());
+    if (item) {
+      var firstRank = Items.findOne({}, {sort: {rank: 1}}).rank;
+      var lastRank = Items.findOne({}, {sort: {rank: -1}}).rank;
+      var newRank = Random.choice([firstRank - 1, lastRank + 1]);
+      Items.update(item._id, {$set: {rank: newRank}});
+    }
   }
 });
 
@@ -134,48 +145,84 @@ UI.body.attached = function () {
     });
   };
 
+  var animateQueue = [];
+  var animationActive = false;
+  var moveActive = false;
+  var runOrQueue = function(f) {
+    if (animationActive) {
+      animateQueue.push(f);
+    } else {
+      animationActive = true;
+      f();
+    }
+  };
+  var runOrQueueIfMoving = function(f) {
+    if (moveActive) {
+      animateQueue.push(f);
+    } else {
+      animationActive = true;
+      f();
+    }
+  };
+  var dequeue = function () {
+    animationActive = false;
+    moveActive = false;
+    if (animateQueue.length > 0) {
+      animationActive = true;
+      animateQueue.pop()();
+    }
+  };
+
   $('#list')[0].$uihooks = {
     insertElement: function (n, parent, next) {
-      animateIn(n, parent, next);
+      runOrQueueIfMoving(function () {
+        animateIn(n, parent, next, dequeue);
+      });
     },
     removeElement: function (n) {
-      animateOut(n);
+      runOrQueueIfMoving(function () {
+        animateOut(n, dequeue);
+      });
     },
     moveElement: function (n, parent, next) {
-      // - make an empty clone of `n` that will animate out of existence,
-      //
-      // - make an empty clone of `n` that will animate into existence
-      // - at the desired new position
-      //
-      // - give `n` absolute positioning, and move it to its desired
-      // - new position
-      var $n = $(n);
-      var pos = $n.position();
+      runOrQueue(function () {
+        moveActive = true;
+        // - make an empty clone of `n` that will animate out of existence,
+        //
+        // - make an empty clone of `n` that will animate into existence
+        // - at the desired new position
+        //
+        // - give `n` absolute positioning, and move it to its desired
+        // - new position
+        var $n = $(n);
+        var pos = $n.position();
 
-      var newPositionPlaceholder = $n.clone();
-      newPositionPlaceholder.css({visibility: 'hidden'});
-      animateIn(newPositionPlaceholder[0], parent, next);
+        var newPositionPlaceholder = $n.clone();
+        newPositionPlaceholder.css({visibility: 'hidden'});
+        animateIn(newPositionPlaceholder[0], parent, next);
 
-      var oldPositionPlacePlaceholder = $n.clone();
-      $n.css({
-        position: 'absolute',
-        top: pos.top,
-        left: pos.left
-      });
+        var oldPositionPlacePlaceholder = $n.clone();
+        $n.css({
+          position: 'absolute',
+          top: pos.top,
+          left: pos.left
+        });
 
-      var clonePos = newPositionPlaceholder.position();
+        var clonePos = newPositionPlaceholder.position();
 
-      oldPositionPlacePlaceholder.css({visibility: 'hidden'});
-      parent.insertBefore(oldPositionPlacePlaceholder[0], $n.next()[0]);
-      animateOut(oldPositionPlacePlaceholder[0]);
+        oldPositionPlacePlaceholder.css({visibility: 'hidden'});
+        parent.insertBefore(oldPositionPlacePlaceholder[0], $n.next()[0]);
+        animateOut(oldPositionPlacePlaceholder[0]);
 
-      $n.animate({
-        top: clonePos.top,
-        left: clonePos.left
-      }, function () {
-        newPositionPlaceholder.remove();
-        $n.css({position: "static"});
-        parent.insertBefore(n, next);
+        $n.animate({
+          top: clonePos.top,
+          left: clonePos.left
+        }, function () {
+          newPositionPlaceholder.remove();
+          $n.css({position: "static"});
+          parent.insertBefore(n, next);
+          dequeue();
+        });
       });
     }
   };

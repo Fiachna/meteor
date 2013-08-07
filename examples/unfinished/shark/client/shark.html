@@ -8,7 +8,7 @@
   <div id="list">
     {{! xcxc if there is whitespace between each items and div class=item
          then removing an element doesn't update the dom }}
-    {{#each items}}<div class="item">{{text}} {{rank}}</div>{{else}}
+    {{#each items}}<div class="item">{{text}}</div>{{else}}
       <strong>Empty</strong>
     {{/each}}
   </div>
@@ -17,4 +17,5 @@
 <template name="buttons">
   <button id="add">add element</button>
   <button id="remove">remove element</button>
+  <button id="move">move element</button>
 </template>
