@@ -38,10 +38,16 @@ Ranks = {
 
 Template.buttons({
   'click #add': function () {
-    var firstRank = Items.findOne({}, {sort: {rank: 1}}).rank;
-    var lastRank = Items.findOne({}, {sort: {rank: -1}}).rank;
-    var newRank = firstRank-1 + (Random.fraction() * (lastRank - firstRank + 2));
-    Items.insert({text: "Hello", rank: newRank});
+    var words = ["violet", "unicorn", "flask", "jar", "leitmotif", "rearrange", "right", "ethereal"];
+    var first = Items.findOne({}, {sort: {rank: 1}});
+    var last = Items.findOne({}, {sort: {rank: -1}});
+    var newRank;
+    if (first && last)
+      newRank = first.rank-1 + (Random.fraction() * (last.rank - first.rank + 2));
+    else
+      newRank = 0;
+
+    Items.insert({text: Random.choice(words) + " " + Random.hexString(2), rank: newRank});
   },
   'click #remove': function () {
     var item = Random.choice(Items.find().fetch());
@@ -51,7 +57,7 @@ Template.buttons({
 
 $.fx.speeds._default = 2000;
 
-// xcxc rendered didn't work and was surprising.
+// xcxc `UI.body.rendered` didn't work. Why?
 UI.body.attached = function () {
   $('#list').sortable({
     stop: function (event, ui) {
@@ -93,9 +99,6 @@ UI.body.attached = function () {
       borderBottomWidth: 0,
       overflow: "hidden"
     });
-    $n.next().css({
-      marginTop: 0
-    });
 
     $n.animate({
       height: height,
@@ -108,10 +111,6 @@ UI.body.attached = function () {
     }, function () {
       onComplete && onComplete();
     });
-    $n.next().animate({
-      // assume that all elements in this list have the same margin-top
-      marginTop: marginTop
-    });
   };
 
   var animateOut = function (n, onComplete) {
@@ -120,10 +119,7 @@ UI.body.attached = function () {
       overflow: "hidden"
     });
     var marginTop = $n.css('marginTop');
-    var $next = $n.next();
-    $next.animate({
-      marginTop: 0
-    });
+
     $n.animate({
       height: 0,
       paddingTop: 0,
@@ -134,8 +130,6 @@ UI.body.attached = function () {
       borderBottomWidth: 0
     }, function () {
       n.parentNode.removeChild(n);
-      // assume that all elements in this list have the same margin-top
-      $next.css({marginTop: marginTop});
       onComplete && onComplete();
     });
   };
@@ -158,29 +152,28 @@ UI.body.attached = function () {
       var $n = $(n);
       var pos = $n.position();
 
-      var appearingClone = $n.clone(); // xcxc names
-      appearingClone.css({visibility: 'hidden'});
-      animateIn(appearingClone[0], parent, next);
+      var newPositionPlaceholder = $n.clone();
+      newPositionPlaceholder.css({visibility: 'hidden'});
+      animateIn(newPositionPlaceholder[0], parent, next);
 
-      var disappearingClone = $n.clone(); // xcxc names
+      var oldPositionPlacePlaceholder = $n.clone();
       $n.css({
         position: 'absolute',
         top: pos.top,
         left: pos.left
       });
 
-      var clonePos = appearingClone.position();
+      var clonePos = newPositionPlaceholder.position();
 
-      disappearingClone.css({visibility: 'hidden'});
-      parent.insertBefore(disappearingClone[0], $n.next()[0]);
-      animateOut(disappearingClone[0]);
+      oldPositionPlacePlaceholder.css({visibility: 'hidden'});
+      parent.insertBefore(oldPositionPlacePlaceholder[0], $n.next()[0]);
+      animateOut(oldPositionPlacePlaceholder[0]);
 
       $n.animate({
         top: clonePos.top,
-        marginTop: 0, // xcxc why?
         left: clonePos.left
       }, function () {
-        appearingClone.remove();
+        newPositionPlaceholder.remove();
         $n.css({position: "static"});
         parent.insertBefore(n, next);
       });
