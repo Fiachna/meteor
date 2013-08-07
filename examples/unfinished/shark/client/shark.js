@@ -36,6 +36,21 @@ Ranks = {
   }
 };
 
+Template.buttons({
+  'click #add': function () {
+    var firstRank = Items.findOne({}, {sort: {rank: 1}}).rank;
+    var lastRank = Items.findOne({}, {sort: {rank: -1}}).rank;
+    var newRank = firstRank-1 + (Random.fraction() * (lastRank - firstRank + 2));
+    Items.insert({text: "Hello", rank: newRank});
+  },
+  'click #remove': function () {
+    var item = Random.choice(Items.find().fetch());
+    Items.remove(item._id);
+  }
+});
+
+$.fx.speeds._default = 2000;
+
 // xcxc rendered didn't work and was surprising.
 UI.body.attached = function () {
   $('#list').sortable({
@@ -57,68 +72,117 @@ UI.body.attached = function () {
     }
   });
 
+  var animateIn = function (n, parent, next, onComplete) {
+    parent.insertBefore(n, next);
+    var $n = $(n);
+    var height = $n.height();
+    var paddingTop = parseInt($n.css("paddingTop"), 10);
+    var paddingBottom = parseInt($n.css("paddingBottom"), 10);
+    var marginTop = parseInt($n.css("marginTop"), 10);
+    var marginBottom = parseInt($n.css("marginBottom"), 10);
+    var borderTop = parseInt($n.css("borderTop"), 10);
+    var borderBottom = parseInt($n.css("borderBottom"), 10);
+
+    $n.css({
+      height: 0,
+      paddingTop: 0,
+      paddingBottom: 0,
+      marginTop: 0,
+      marginBottom: 0,
+      borderTopWidth: 0,
+      borderBottomWidth: 0,
+      overflow: "hidden"
+    });
+    $n.next().css({
+      marginTop: 0
+    });
+
+    $n.animate({
+      height: height,
+      paddingTop: paddingTop,
+      paddingBottom: paddingBottom,
+      marginTop: marginTop,
+      marginBottom: marginBottom,
+      borderTopWidth: borderTop,
+      borderBottomWidth: borderBottom
+    }, function () {
+      onComplete && onComplete();
+    });
+    $n.next().animate({
+      // assume that all elements in this list have the same margin-top
+      marginTop: marginTop
+    });
+  };
+
+  var animateOut = function (n, onComplete) {
+    var $n = $(n);
+    $n.css({
+      overflow: "hidden"
+    });
+    var marginTop = $n.css('marginTop');
+    var $next = $n.next();
+    $next.animate({
+      marginTop: 0
+    });
+    $n.animate({
+      height: 0,
+      paddingTop: 0,
+      paddingBottom: 0,
+      marginTop: 0,
+      marginBottom: 0,
+      borderTopWidth: 0,
+      borderBottomWidth: 0
+    }, function () {
+      n.parentNode.removeChild(n);
+      // assume that all elements in this list have the same margin-top
+      $next.css({marginTop: marginTop});
+      onComplete && onComplete();
+    });
+  };
+
   $('#list')[0].$uihooks = {
     insertElement: function (n, parent, next) {
-      var $n = $(n);
-      parent.insertBefore(n, next);
-      var height = $n.height();
-      var paddingTop = parseInt($n.css("paddingTop"), 10);
-      var paddingBottom = parseInt($n.css("paddingBottom"), 10);
-      var marginTop = parseInt($n.css("marginTop"), 10);
-      var marginBottom = parseInt($n.css("marginBottom"), 10);
-      var borderTop = parseInt($n.css("borderTop"), 10);
-      var borderBottom = parseInt($n.css("borderBottom"), 10);
-
-      $n.css({
-        height: 0,
-        paddingTop: 0,
-        paddingBottom: 0,
-        marginTop: 0,
-        marginBottom: 0,
-        borderTopWidth: 0,
-        borderBottomWidth: 0,
-        overflow: "hidden"
-      });
-      $n.next().css({
-        marginTop: 0
-      });
-
-      $n.animate({
-        height: height,
-        paddingTop: paddingTop,
-        paddingBottom: paddingBottom,
-        marginTop: marginTop,
-        marginBottom: marginBottom,
-        borderTopWidth: borderTop,
-        borderBottomWidth: borderBottom
-      });
-      $n.next().animate({
-        // assume that all elements in this list have the same margin-top
-        marginTop: marginTop
-      });
+      animateIn(n, parent, next);
     },
     removeElement: function (n) {
+      animateOut(n);
+    },
+    moveElement: function (n, parent, next) {
+      // - make an empty clone of `n` that will animate out of existence,
+      //
+      // - make an empty clone of `n` that will animate into existence
+      // - at the desired new position
+      //
+      // - give `n` absolute positioning, and move it to its desired
+      // - new position
       var $n = $(n);
+      var pos = $n.position();
+
+      var appearingClone = $n.clone(); // xcxc names
+      appearingClone.css({visibility: 'hidden'});
+      animateIn(appearingClone[0], parent, next);
+
+      var disappearingClone = $n.clone(); // xcxc names
       $n.css({
-        overflow: "hidden"
+        position: 'absolute',
+        top: pos.top,
+        left: pos.left
       });
-      var marginTop = $n.css('marginTop');
-      var $next = $n.next();
-      $next.animate({
-        marginTop: 0
-      });
+
+      var clonePos = appearingClone.position();
+
+      disappearingClone.css({visibility: 'hidden'});
+      parent.insertBefore(disappearingClone[0], $n.next()[0]);
+      animateOut(disappearingClone[0]);
+
       $n.animate({
-        height: 0,
-        paddingTop: 0,
-        paddingBottom: 0,
-        marginTop: 0,
-        marginBottom: 0,
-        borderTopWidth: 0,
-        borderBottomWidth: 0
+        top: clonePos.top,
+        marginTop: 0, // xcxc why?
+        left: clonePos.left
       }, function () {
-        n.parentNode.removeChild(n);
-        // assume that all elements in this list have the same margin-top
-        $next.css({marginTop: marginTop});
+        appearingClone.remove();
+        $n.css({position: "static"});
+        parent.insertBefore(n, next);
       });
     }
   };

@@ -5,6 +5,7 @@
   margin: 8px;
   font-weight: bold;
   cursor: move;
+  width: 400px;
 }
 
 .isotope .item {

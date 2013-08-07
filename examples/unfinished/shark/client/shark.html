@@ -3,8 +3,7 @@
 </head>
 
 <body>
-
-  <h1>Hello {{name}}</h1>
+  {{> buttons}}
 
   <div id="list">
     {{! xcxc if there is whitespace between each items and div class=item
@@ -13,5 +12,9 @@
       <strong>Empty</strong>
     {{/each}}
   </div>
-
 </body>
+
+<template name="buttons">
+  <button id="add">add element</button>
+  <button id="remove">remove element</button>
+</template>
