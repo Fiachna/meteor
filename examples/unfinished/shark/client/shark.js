@@ -14,6 +14,12 @@ UI.body.name = 'World';
 
 UI.body.items = Items.find({}, { sort: { rank: 1 }});
 
+UI.body.showFooter = function () {
+  return Session.get("showFooter");
+};
+Meteor.setInterval(function () {
+  Session.set("showFooter", !Session.get("showFooter"));
+}, 3000);
 
 // XXX this is a Minimal Viable Implementation. Improve:
 //

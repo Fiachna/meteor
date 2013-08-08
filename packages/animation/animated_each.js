@@ -174,9 +174,12 @@ AnimatedList = Package.ui.Component.extend({
     buf.write(this.content);
   },
   attached: function () {
-    var childEls = this.$('*');
+    var self = this;
+    var childEls = _.filter(self.$('*'), function (n) {
+      return n.parentNode === self.firstNode().parentNode;
+    }); // xcxc we'd like something like jquery's `.children()`
     if (childEls.length !== 1)
       throw new Error("#AnimatedList must have precisely one top-level child element");
-    apply(childEls, this.events && this.events.split(' '));
+    apply(childEls, self.events && self.events.split(' '));
   }
 });
