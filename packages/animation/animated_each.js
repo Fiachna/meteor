@@ -2,9 +2,6 @@
 $.fx.speeds._default = 2000;
 
 var apply = function (el, events) {
-  // xcxc assume that this is a jquery array
-  events = events || ['insert', 'remove', 'move'];
-
   var animateIn = function (n, parent, next, onComplete) {
     parent.insertBefore(n, next);
     var $n = $(n);
@@ -91,12 +88,15 @@ var apply = function (el, events) {
     }
   };
 
-  // xcxc chained hooks?
+  if ($(el)[0].$uihooks)
+    throw new Error("Can't use #AnimatedEach on an element already decorated with ui hooks");
   $(el)[0].$uihooks = {};
+
+  events = events || ['add', 'remove', 'move'];
 
   // xcxc make these events accept functions, so that we can not
   // animate initial data but still animate subsequent inserts
-  if (_.contains(events, 'insert')) { // xcxc insert -> add
+  if (_.contains(events, 'add')) {
     $(el)[0].$uihooks.insertElement = function (n, parent, next) {
       runOrQueueIfMoving(function () {
         var onComplete = dequeuePlanned ? null : dequeue;
