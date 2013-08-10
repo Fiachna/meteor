@@ -21,6 +21,13 @@ Meteor.setInterval(function () {
   Session.set("showFooter", !Session.get("showFooter"));
 }, 3000);
 
+UI.body.counter = function () {
+  return Session.get("counter");
+};
+Meteor.setInterval(function () {
+  Session.set("counter", (Session.get("counter") || 0) + 1);
+}, 100);
+
 // XXX this is a Minimal Viable Implementation. Improve:
 //
 // - Strings rather than floating point numbers (making sure not to
